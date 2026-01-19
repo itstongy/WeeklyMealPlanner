@@ -166,9 +166,15 @@ function renderWeek(activeIndex = Number(elements.targetDay.value || 0)) {
     state.people.forEach((person, personIndex) => {
       const toggle = document.createElement("label");
       toggle.className = "toggle";
+      toggle.addEventListener("click", (event) => {
+        event.stopPropagation();
+      });
       const checkbox = document.createElement("input");
       checkbox.type = "checkbox";
       checkbox.checked = day.atHome[personIndex];
+      checkbox.addEventListener("click", (event) => {
+        event.stopPropagation();
+      });
       checkbox.addEventListener("change", (event) => {
         day.atHome[personIndex] = event.target.checked;
         renderWeek(index);
