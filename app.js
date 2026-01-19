@@ -38,6 +38,7 @@ const elements = {
   exportJson: document.getElementById("export-json"),
   exportCsv: document.getElementById("export-csv"),
   exportIcs: document.getElementById("export-ics"),
+  exportTime: document.getElementById("export-time"),
   summary: document.getElementById("summary"),
   copySummary: document.getElementById("copy-summary"),
 };
@@ -46,6 +47,7 @@ const defaultState = () => ({
   people: ["You", "Partner"],
   meals: [],
   library: [],
+  exportTime: "18:00",
 });
 
 const state = loadState();
@@ -61,6 +63,7 @@ elements.resetWeek.addEventListener("click", () => resetWeek());
 elements.exportJson.addEventListener("click", () => exportJson());
 elements.exportCsv.addEventListener("click", () => exportCsv());
 elements.exportIcs.addEventListener("click", () => exportIcs());
+elements.exportTime.addEventListener("change", () => updateExportTime());
 elements.copySummary.addEventListener("click", () => copySummary());
 
 function loadState() {
@@ -130,6 +133,7 @@ function updatePeople() {
 function renderAll() {
   elements.personA.value = state.people[0];
   elements.personB.value = state.people[1];
+  elements.exportTime.value = state.exportTime || "18:00";
   renderTargetDays();
   renderWeek();
   renderSuggestions();
@@ -193,6 +197,9 @@ function renderWeek(activeIndex = Number(elements.targetDay.value || 0)) {
     mealInput.type = "text";
     mealInput.value = day.meal || "";
     mealInput.placeholder = "Add meal";
+    mealInput.addEventListener("click", (event) => {
+      event.stopPropagation();
+    });
     mealInput.addEventListener("input", (event) => {
       day.meal = event.target.value;
       saveState();
@@ -211,6 +218,9 @@ function renderWeek(activeIndex = Number(elements.targetDay.value || 0)) {
     servingsInput.max = "8";
     servingsInput.value = day.servings;
     servingsInput.className = "servings";
+    servingsInput.addEventListener("click", (event) => {
+      event.stopPropagation();
+    });
     servingsInput.addEventListener("input", (event) => {
       day.servings = Number(event.target.value) || 2;
       saveState();
@@ -400,30 +410,77 @@ function exportCsv() {
   downloadFile("meal-plan.csv", header + rows, "text/csv");
 }
 
-function exportIcs() {
+function exportIcs({ hour = 18, timeZone = getLocalTimeZone() } = {}) {
+  const exportTime = state.exportTime || "18:00";
+  const timeParts = parseTimeString(exportTime);
+  const fallbackHour = Number.isFinite(timeParts.hour) ? timeParts.hour : hour;
+  const fallbackMinute = Number.isFinite(timeParts.minute) ? timeParts.minute : 0;
   const events = state.meals
     .map((day) => {
-      const start = formatIcsDate(day.date, 18);
-      const end = formatIcsDate(day.date, 19);
+      const startLocal = buildLocalDateTime(day.date, fallbackHour, fallbackMinute);
+      const endLocal = new Date(startLocal);
+      endLocal.setHours(startLocal.getHours() + 1);
       const summary = day.meal || "Dinner";
       return [
         "BEGIN:VEVENT",
         `UID:${day.id}-${day.date.getTime()}@mealplan`,
-        `DTSTAMP:${formatIcsDate(new Date(), 0)}`,
-        `DTSTART:${start}`,
-        `DTEND:${end}`,
+        `DTSTAMP:${formatIcsDateUtc(new Date())}`,
+        `DTSTART;TZID=${timeZone}:${formatIcsDateParts(startLocal)}`,
+        `DTEND;TZID=${timeZone}:${formatIcsDateParts(endLocal)}`,
         `SUMMARY:${escapeIcs(summary)}`,
         "END:VEVENT",
       ].join("\n");
     })
     .join("\n");
-  const content = ["BEGIN:VCALENDAR", "VERSION:2.0", events, "END:VCALENDAR"].join("\n");
+  const content = ["BEGIN:VCALENDAR", "VERSION:2.0", `X-WR-TIMEZONE:${timeZone}`, events, "END:VCALENDAR"].join("\n");
   downloadFile("meal-plan.ics", content, "text/calendar");
 }
 
-function formatIcsDate(date, hour) {
-  const utc = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), hour, 0, 0));
-  return utc.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+function formatIcsDateUtc(date) {
+  const utc = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), 0, 0));
+  return `${formatIcsDateParts(utc)}Z`;
+}
+
+function formatIcsDateParts(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const seconds = String(date.getSeconds()).padStart(2, "0");
+  return `${year}${month}${day}T${hours}${minutes}${seconds}`;
+}
+
+function getLocalTimeZone() {
+  return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+}
+
+function buildLocalDateTime(date, hour, minute) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), hour, minute, 0);
+}
+
+function parseTimeString(value) {
+  if (typeof value !== "string") {
+    return { hour: 18, minute: 0 };
+  }
+  const match = value.match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) {
+    return { hour: 18, minute: 0 };
+  }
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  if (Number.isNaN(hour) || Number.isNaN(minute)) {
+    return { hour: 18, minute: 0 };
+  }
+  return {
+    hour: Math.max(0, Math.min(23, hour)),
+    minute: Math.max(0, Math.min(59, minute)),
+  };
+}
+
+function updateExportTime() {
+  state.exportTime = elements.exportTime.value || "18:00";
+  saveState();
 }
 
 function escapeIcs(value) {
