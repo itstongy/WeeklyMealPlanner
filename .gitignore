@@ -1,0 +1,12 @@
+.DS_Store
+*.log
+node_modules/
+.env
+
+# AI/agent-specific notes
+AGENTS.md
+AI.md
+AI_*.md
+*_AI.md
+*.ai.md
+*.codex.md

@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Weekly Meal Planning</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="page">
+      <header class="hero">
+        <div class="hero-text">
+          <p class="eyebrow">Shared kitchen, synced nights</p>
+          <h1>Weekly Meal Planning</h1>
+          <p class="subhead">
+            Plan dinners based on who is home, keep leftovers in mind, and
+            export a clean weekly view.
+          </p>
+        </div>
+        <div class="hero-card">
+          <div class="field-row">
+            <label for="person-a">Person A</label>
+            <input id="person-a" type="text" value="You" />
+          </div>
+          <div class="field-row">
+            <label for="person-b">Person B</label>
+            <input id="person-b" type="text" value="Partner" />
+          </div>
+          <div class="note">
+            Default plan cooks for 2, with leftovers assumed when someone is
+            away.
+          </div>
+        </div>
+      </header>
+
+      <main class="layout">
+        <section class="planner">
+          <div class="section-title">
+            <h2>Week Planner</h2>
+            <div class="actions">
+              <button id="reset-week" class="ghost">Reset Week</button>
+            </div>
+          </div>
+          <div id="week-grid" class="week-grid"></div>
+        </section>
+
+        <aside class="sidebar">
+          <section class="panel">
+            <div class="section-title">
+              <h3>Quick Suggestions</h3>
+              <button id="refresh-suggestions" class="ghost">Refresh 5</button>
+            </div>
+            <div class="field-row">
+              <label for="target-day">Apply to</label>
+              <select id="target-day"></select>
+            </div>
+            <ul id="suggestions-list" class="list"></ul>
+          </section>
+
+          <section class="panel">
+            <div class="section-title">
+              <h3>Meal Library</h3>
+              <button id="add-meal" class="ghost">Add Meal</button>
+            </div>
+            <div id="meal-library" class="list"></div>
+            <div class="import">
+              <label for="import-meals">Import meals (one per line)</label>
+              <textarea id="import-meals" rows="4"></textarea>
+              <button id="import-button">Import Meals</button>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="section-title">
+              <h3>Export & Share</h3>
+            </div>
+            <div class="export-buttons">
+              <button id="export-json">Download JSON</button>
+              <button id="export-csv">Download CSV</button>
+              <button id="export-ics">Download Calendar</button>
+            </div>
+            <label for="summary">Weekly summary</label>
+            <textarea id="summary" rows="6" readonly></textarea>
+            <button id="copy-summary" class="ghost">Copy Summary</button>
+          </section>
+        </aside>
+      </main>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
